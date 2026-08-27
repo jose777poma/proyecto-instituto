@@ -31,4 +31,14 @@ export class BookingsController {
   cancelBooking(@Param('bookingId') bookingId: string, @Request() req: any) {
     return this.bookingsService.cancelBooking(req.user.userId, bookingId);
   }
+
+  @Post('grade/:bookingId')
+  @Roles(Role.TEACHER) // Exclusivo para profesores
+  gradeStudent(
+    @Param('bookingId') bookingId: string,
+    @Body('grade') grade: number,
+    @Request() req: any
+  ) {
+    return this.bookingsService.gradeBooking(req.user.userId, bookingId, grade);
+  }
 }

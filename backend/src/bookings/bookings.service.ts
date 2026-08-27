@@ -194,4 +194,62 @@ export class BookingsService {
       return { message: 'Cancelación tardía (menos de 5 horas). Se ha marcado como Falta Injustificada con nota 0.' };
     }
   }
+
+  async gradeBooking(teacherUserId: string, bookingId: string, grade: number) {
+    if (grade < 0 || grade > 100) throw new BadRequestException('La nota debe estar entre 0 y 100');
+
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { 
+        classSession: { include: { teacher: true } },
+        student: true
+      }
+    });
+
+    if (!booking) throw new NotFoundException('Reserva no encontrada');
+    
+    // Verificamos que el profesor que califica sea el dueño de la clase
+    if (booking.classSession.teacher.userId !== teacherUserId) {
+      throw new BadRequestException('No tienes permisos. Solo el profesor asignado a esta clase puede calificarla.');
+    }
+    
+    // No calificar si el estudiante canceló previamente
+    if (booking.status === 'CANCELED' || booking.status === 'ABSENT_NO_SHOW') {
+      throw new BadRequestException('No se puede calificar a un alumno que canceló o tiene falta');
+    }
+
+    // Guardar la calificación
+    await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { grade, status: 'ATTENDED' }
+    });
+
+    // REGLA DE NEGOCIO: Avance Académico
+    if (grade >= 81) {
+      const student = booking.student;
+      let nextSessionType = student.current_session_type;
+      let nextLesson = student.current_lesson;
+
+      if (student.current_session_type === 'ESSENTIAL') {
+        nextSessionType = 'WORKING_CLASS';
+      } else if (student.current_session_type === 'WORKING_CLASS') {
+        nextSessionType = 'SPEAK_OUT';
+      } else if (student.current_session_type === 'SPEAK_OUT') {
+        nextSessionType = 'ESSENTIAL';
+        nextLesson += 1; // Terminó las 3 sesiones, avanza a la siguiente lección
+      }
+
+      await this.prisma.studentProfile.update({
+        where: { id: student.id },
+        data: {
+          current_session_type: nextSessionType,
+          current_lesson: nextLesson
+        }
+      });
+      return { message: `Calificación guardada (${grade}/100). ¡El alumno ha aprobado y avanzado!` };
+    } else {
+      // Reprobó, se queda en la misma lección y sesión
+      return { message: `Calificación guardada (${grade}/100). El alumno reprobó y deberá repetir esta sesión.` };
+    }
+  }
 }
