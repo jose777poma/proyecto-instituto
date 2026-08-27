@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SECRETARY
+  TEACHER
+  STUDENT
+}
+
+enum SessionType {
+  ESSENTIAL
+  WORKING_CLASS
+  SPEAK_OUT
+}
+
+enum ClassStatus {
+  OPEN
+  CLOSED
+  COMPLETED
+}
+
+enum BookingStatus {
+  BOOKED
+  CANCELED
+  ATTENDED
+  ABSENT_NO_SHOW
+}
+
+enum TokenType {
+  ANCHOR
+  JOIN
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  role          Role
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
+}
+
+model StudentProfile {
+  id                   String        @id @default(uuid())
+  userId               String        @unique
+  user                 User          @relation(fields: [userId], references: [id])
+  current_lesson       Int           @default(1)
+  current_session_type SessionType   @default(ESSENTIAL)
+  
+  bookings             Booking[]
+  weeklyQuotas         StudentWeeklyQuota[]
+}
+
+model TeacherProfile {
+  id             String                @id @default(uuid())
+  userId         String                @unique
+  user           User                  @relation(fields: [userId], references: [id])
+  active         Boolean               @default(true)
+  
+  availability   TeacherAvailability[]
+  classes        ClassSession[]
+}
+
+model TeacherAvailability {
+  id             String         @id @default(uuid())
+  teacherId      String
+  teacher        TeacherProfile @relation(fields: [teacherId], references: [id])
+  day_of_week    Int            // 1=Lunes ... 7=Domingo
+  start_time     String         // Formato "HH:MM", ej. "14:00"
+}
+
+model ClassSession {
+  id             String         @id @default(uuid())
+  teacherId      String
+  teacher        TeacherProfile @relation(fields: [teacherId], references: [id])
+  date           DateTime       // Fecha exacta de la clase
+  start_time     String         // Formato "HH:MM", ej. "14:00"
+  session_type   SessionType
+  anchor_lesson  Int            // Lección del estudiante ancla (define qué alumnos pueden unirse)
+  status         ClassStatus    @default(OPEN)
+  
+  bookings       Booking[]
+}
+
+model Booking {
+  id             String         @id @default(uuid())
+  classId        String
+  classSession   ClassSession   @relation(fields: [classId], references: [id])
+  studentId      String
+  student        StudentProfile @relation(fields: [studentId], references: [id])
+  token_used     TokenType
+  grade          Int?
+  status         BookingStatus  @default(BOOKED)
+  createdAt      DateTime       @default(now())
+}
+
+model StudentWeeklyQuota {
+  id                 String         @id @default(uuid())
+  studentId          String
+  student            StudentProfile @relation(fields: [studentId], references: [id])
+  week_start_date    DateTime       // Fecha del lunes de la semana actual
+  anchor_tokens_used Int            @default(0) // Max 3
+  join_tokens_used   Int            @default(0) // Max 3
+}
