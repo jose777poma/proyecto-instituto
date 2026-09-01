@@ -72,7 +72,7 @@ export default function TeacherDashboard() {
     setHistoryModalOpen(true);
     setLoadingHistory(true);
     try {
-      const res = await api.get(`/classes/student/${student.id}/history`);
+      const res = await api.get(`/classes/student/${student.userId}/history`);
       setStudentHistory(res.data);
     } catch (e) {
       console.error(e);

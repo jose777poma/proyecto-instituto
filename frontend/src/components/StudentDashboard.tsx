@@ -80,9 +80,9 @@ export default function StudentDashboard() {
       if (res.data.length === 0) {
         alert('Lo sentimos, no hay docentes disponibles para este horario.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('Error al buscar profesores.');
+      alert(e.response?.data?.message || 'Error al buscar profesores.');
     }
   };
 

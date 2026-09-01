@@ -161,14 +161,14 @@ export default function SecretaryDashboard() {
     }
 
     try {
-      const res = await api.get(`/bookings/available-teachers?date=${anchorDate}&startTime=${anchorTime}`);
+      const res = await api.get(`/bookings/available-teachers?date=${anchorDate}&startTime=${anchorTime}&studentId=${selectedStudent.id}`);
       setAvailableTeachers(res.data);
       if (res.data.length === 0) {
         alert('No hay profesores disponibles para esta fecha y hora.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('Error al buscar profesores.');
+      alert(e.response?.data?.message || 'Error al buscar profesores.');
     }
   };
 

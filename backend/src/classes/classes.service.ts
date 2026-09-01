@@ -120,6 +120,7 @@ export class ClassesService {
         observations: b.observations,
         student: {
           id: b.student.id,
+          userId: b.student.userId,
           name: b.student.user.name,
           email: b.student.user.email,
           birth_date: b.student.birth_date
