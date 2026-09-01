@@ -18,12 +18,15 @@ enum SessionType {
   ESSENTIAL
   WORKING_CLASS
   SPEAK_OUT
+  EXAM_WRITTEN
+  EXAM_ORAL
 }
 
 enum ClassStatus {
   OPEN
   CLOSED
   COMPLETED
+  CANCELED
 }
 
 enum BookingStatus {
@@ -52,64 +55,79 @@ model User {
 }
 
 model StudentProfile {
-  id                   String        @id @default(uuid())
-  userId               String        @unique
-  user                 User          @relation(fields: [userId], references: [id])
-  current_lesson       Int           @default(1)
-  current_session_type SessionType   @default(ESSENTIAL)
-  
+  id                   String               @id @default(uuid())
+  userId               String               @unique
+  user                 User                 @relation(fields: [userId], references: [id])
+  birth_date           DateTime?            
+  current_lesson       Int                  @default(1)
+  current_session_type SessionType          @default(ESSENTIAL)
+  access_expires_at    DateTime             @default(now())
   bookings             Booking[]
   weeklyQuotas         StudentWeeklyQuota[]
 }
 
 model TeacherProfile {
-  id             String                @id @default(uuid())
-  userId         String                @unique
-  user           User                  @relation(fields: [userId], references: [id])
-  active         Boolean               @default(true)
-  
-  availability   TeacherAvailability[]
-  classes        ClassSession[]
+  id        String  @id @default(uuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id])
+  active    Boolean @default(true)
+  meet_link String?
+  can_conduct_exams Boolean @default(false)
+
+  availability TeacherAvailability[]
+  classes      ClassSession[]
 }
 
 model TeacherAvailability {
-  id             String         @id @default(uuid())
-  teacherId      String
-  teacher        TeacherProfile @relation(fields: [teacherId], references: [id])
-  day_of_week    Int            // 1=Lunes ... 7=Domingo
-  start_time     String         // Formato "HH:MM", ej. "14:00"
+  id          String         @id @default(uuid())
+  teacherId   String
+  teacher     TeacherProfile @relation(fields: [teacherId], references: [id])
+  day_of_week Int // 1=Lunes ... 7=Domingo
+  start_time  String // Formato "HH:MM", ej. "14:00"
 }
 
 model ClassSession {
-  id             String         @id @default(uuid())
-  teacherId      String
-  teacher        TeacherProfile @relation(fields: [teacherId], references: [id])
-  date           DateTime       // Fecha exacta de la clase
-  start_time     String         // Formato "HH:MM", ej. "14:00"
-  session_type   SessionType
-  anchor_lesson  Int            // Lección del estudiante ancla (define qué alumnos pueden unirse)
-  status         ClassStatus    @default(OPEN)
-  
-  bookings       Booking[]
+  id            String         @id @default(uuid())
+  teacherId     String
+  teacher       TeacherProfile @relation(fields: [teacherId], references: [id])
+  date          DateTime // Fecha exacta de la clase
+  start_time    String // Formato "HH:MM", ej. "14:00"
+  session_type  SessionType
+  anchor_lesson Int // Lección del estudiante ancla (define qué alumnos pueden unirse)
+  status        ClassStatus    @default(OPEN)
+
+  bookings Booking[]
 }
 
 model Booking {
-  id             String         @id @default(uuid())
-  classId        String
-  classSession   ClassSession   @relation(fields: [classId], references: [id])
-  studentId      String
-  student        StudentProfile @relation(fields: [studentId], references: [id])
-  token_used     TokenType
-  grade          Int?
-  status         BookingStatus  @default(BOOKED)
-  createdAt      DateTime       @default(now())
+  id           String         @id @default(uuid())
+  classId      String
+  classSession ClassSession   @relation(fields: [classId], references: [id])
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id])
+  token_used   TokenType
+  grade        Int?
+  status       BookingStatus  @default(BOOKED)
+  observations String?        @db.Text
+  createdAt    DateTime       @default(now())
 }
 
 model StudentWeeklyQuota {
   id                 String         @id @default(uuid())
   studentId          String
   student            StudentProfile @relation(fields: [studentId], references: [id])
-  week_start_date    DateTime       // Fecha del lunes de la semana actual
+  week_start_date    DateTime // Fecha del lunes de la semana actual
   anchor_tokens_used Int            @default(0) // Max 3
   join_tokens_used   Int            @default(0) // Max 3
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String // userId del que realizó la acción
+  actorRole  Role // Rol del que realizó la acción
+  action     String // Ej: "CLASS_BOOKED", "CLASS_CANCELED", "GRADE_ASSIGNED"
+  entityType String // Ej: "Booking", "ClassSession"
+  entityId   String // ID de la entidad modificada
+  details    String // Descripción detallada en texto
+  timestamp  DateTime @default(now())
 }
