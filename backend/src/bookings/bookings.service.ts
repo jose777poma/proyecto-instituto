@@ -509,7 +509,7 @@ export class BookingsService {
     if (diffHours >= 5) {
       await this.prisma.booking.update({
         where: { id: bookingId },
-        data: { status: 'CANCELED' }
+        data: { status: 'CANCELED', observations: 'Cancelado por el alumno (A tiempo)' }
       });
 
       if (booking.classSession.status === 'CLOSED') {
@@ -524,7 +524,7 @@ export class BookingsService {
     } else {
       await this.prisma.booking.update({
         where: { id: bookingId },
-        data: { status: 'ABSENT_NO_SHOW', grade: 0 }
+        data: { status: 'ABSENT_NO_SHOW', grade: 0, observations: 'Cancelación tardía por el alumno' }
       });
       
       await this.audit.logAction(actorId, actorRole, 'CLASS_CANCELED_LATE', 'Booking', bookingId, `Cancelación tardía (< 5hrs) del alumno ${studentUserId}. Falta y nota 0.`);

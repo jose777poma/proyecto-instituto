@@ -455,6 +455,11 @@ export default function StudentDashboard() {
                              <span className={`font-bold text-xl ${booking.status === 'CANCELED' ? 'text-gray-400 text-sm italic' : booking.grade !== null && booking.grade >= 80 ? 'text-green-600' : 'text-red-600'}`}>
                                {booking.status === 'CANCELED' ? 'Cancelada' : (booking.grade ?? 'Pendiente')}
                              </span>
+                             {booking.observations && (booking.status === 'CANCELED' || booking.status === 'ABSENT_NO_SHOW') && (
+                               <span className="block text-xs text-red-500 font-medium mt-1">
+                                 {booking.observations}
+                               </span>
+                             )}
                           </td>
                         </tr>
                       ))
