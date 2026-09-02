@@ -147,9 +147,8 @@ export default function TeacherDashboard() {
   const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/La_Paz' }); // o usar tu logica de timezone
 
   const upcomingClasses = classes.filter(c => {
-    if (c.status === 'COMPLETED' || c.status === 'CANCELED') return false;
-    
-    // Es futura/hoy
+    if (c.status === 'COMPLETED') return false;
+    if (c.status === 'CANCELED' && localDateStr(c.date) !== todayStr) return false;
     if (localDateStr(c.date) >= todayStr) return true;
 
     // O es pasada pero aún tiene alumnos sin calificar (BOOKED)
@@ -158,8 +157,8 @@ export default function TeacherDashboard() {
   });
 
   const pastClasses = classes.filter(c => {
-    if (c.status === 'COMPLETED' || c.status === 'CANCELED') return true;
-    
+    if (c.status === 'COMPLETED') return true;
+    if (c.status === 'CANCELED' && localDateStr(c.date) !== todayStr) return true;
     // Es pasada y TODOS los alumnos ya fueron calificados (ninguno en BOOKED)
     if (localDateStr(c.date) < todayStr) {
       const hasPendingGrades = c.bookings?.some((b: any) => b.status === 'BOOKED');
@@ -245,12 +244,20 @@ export default function TeacherDashboard() {
                           <span className="bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1 rounded-full">
                             Lección {cls.anchor_lesson}
                           </span>
+                          {cls.status === 'CANCELED' && (
+                            <span className="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">
+                              CANCELADA
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-gray-500 flex items-center gap-2">
                           <Users size={16} /> {cls.bookings?.length || 0} alumnos inscritos
                         </p>
                       </div>
-                      <button className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition">
+                      <button 
+                        disabled={cls.status === 'CANCELED'}
+                        className={`w-full md:w-auto px-6 py-2 font-medium rounded-lg transition ${cls.status === 'CANCELED' ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                      >
                         Abrir Sala de Meet
                       </button>
                     </div>
@@ -291,6 +298,10 @@ export default function TeacherDashboard() {
                                   <span className="flex items-center gap-1 text-sm text-red-600 font-medium">
                                     <XCircle size={16} /> Falta Injustificada
                                   </span>
+                                ) : booking.status === 'CANCELED' ? (
+                                  <span className="flex items-center gap-1 text-sm text-gray-500 font-medium">
+                                    <XCircle size={16} /> Cancelado por Alumno
+                                  </span>
                                 ) : (
                                   <span className="flex items-center gap-1 text-sm text-orange-500 font-medium">
                                     <Clock size={16} /> Pendiente
@@ -307,6 +318,8 @@ export default function TeacherDashboard() {
                                       <p className="text-xs text-gray-500 italic text-right max-w-xs">{booking.observations}</p>
                                     )}
                                   </div>
+                                ) : booking.status === 'CANCELED' ? (
+                                  <span className="text-sm text-gray-400 italic">No requiere calificación</span>
                                 ) : (
                                   <div className="flex flex-col gap-2">
                                     <div className="flex items-center justify-end gap-2">
