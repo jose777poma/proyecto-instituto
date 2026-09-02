@@ -145,9 +145,28 @@ export default function TeacherDashboard() {
 
   const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/La_Paz' }); // o usar tu logica de timezone
 
-  const upcomingClasses = classes.filter(c => localDateStr(c.date) >= todayStr && c.status !== 'COMPLETED' && c.status !== 'CANCELED');
-  const pastClasses = classes.filter(c => localDateStr(c.date) < todayStr || c.status === 'COMPLETED' || c.status === 'CANCELED');
+  const upcomingClasses = classes.filter(c => {
+    if (c.status === 'COMPLETED' || c.status === 'CANCELED') return false;
+    
+    // Es futura/hoy
+    if (localDateStr(c.date) >= todayStr) return true;
 
+    // O es pasada pero aún tiene alumnos sin calificar (BOOKED)
+    const hasPendingGrades = c.bookings?.some((b: any) => b.status === 'BOOKED');
+    return hasPendingGrades;
+  });
+
+  const pastClasses = classes.filter(c => {
+    if (c.status === 'COMPLETED' || c.status === 'CANCELED') return true;
+    
+    // Es pasada y TODOS los alumnos ya fueron calificados (ninguno en BOOKED)
+    if (localDateStr(c.date) < todayStr) {
+      const hasPendingGrades = c.bookings?.some((b: any) => b.status === 'BOOKED');
+      return !hasPendingGrades;
+    }
+    
+    return false;
+  });
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
       <nav className="bg-white shadow-sm px-6 md:px-8 py-4 flex justify-between items-center mb-6">
