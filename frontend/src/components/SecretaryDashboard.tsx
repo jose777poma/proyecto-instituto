@@ -4,7 +4,7 @@ import { formatRelativeDate } from '../utils/dateFormatter';
 import api from '../api/axios';
 
 export default function SecretaryDashboard() {
-  const [activeTab, setActiveTab] = useState<'classes' | 'students' | 'register_student' | 'teachers'>('classes');
+  const [activeTab, setActiveTab] = useState<'classes' | 'students' | 'register_student' | 'teachers' | 'exceptions'>('classes');
   const [classes, setClasses] = useState<any[]>([]);
 
   // Estados para Búsqueda y Forzar Cupo
@@ -56,13 +56,56 @@ export default function SecretaryDashboard() {
   const [availableTeachers, setAvailableTeachers] = useState<any[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
 
+  // Estados para Excepciones/Feriados
+  const [exceptions, setExceptions] = useState<any[]>([]);
+  const [newException, setNewException] = useState({ date: '', teacherId: '', description: '' });
+
   useEffect(() => {
     if (activeTab === 'classes') {
       fetchClasses();
     } else if (activeTab === 'teachers') {
       fetchTeachers();
+    } else if (activeTab === 'exceptions') {
+      fetchExceptions();
+      fetchTeachers();
     }
   }, [activeTab]);
+
+  const fetchExceptions = async () => {
+    try {
+      const res = await api.get('/users/exceptions');
+      setExceptions(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleCreateException = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/users/exceptions', {
+        date: newException.date,
+        teacherId: newException.teacherId === 'all' ? null : newException.teacherId,
+        description: newException.description
+      });
+      alert('Excepción/Feriado creado exitosamente');
+      setNewException({ date: '', teacherId: '', description: '' });
+      fetchExceptions();
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Error al crear excepción');
+    }
+  };
+
+  const handleDeleteException = async (id: string) => {
+    if (!window.confirm('¿Seguro que deseas eliminar esta excepción?')) return;
+    try {
+      await api.post(`/users/exceptions/${id}/delete`);
+      fetchExceptions();
+    } catch (e) {
+      console.error(e);
+      alert('Error al eliminar');
+    }
+  };
 
   const fetchTeachers = async () => {
     try {
@@ -344,6 +387,12 @@ export default function SecretaryDashboard() {
           >
             Gestión de Profesores
           </button>
+          <button
+            onClick={() => setActiveTab('exceptions')}
+            className={`pb-4 px-6 text-sm font-bold border-b-2 transition ${activeTab === 'exceptions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            Feriados y Excepciones
+          </button>
         </div>
       </div>
 
@@ -584,6 +633,66 @@ export default function SecretaryDashboard() {
                   ))}
                   {teachers.length === 0 && <p className="text-sm text-gray-500">No hay profesores registrados.</p>}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'exceptions' && (
+          <div className="space-y-6">
+            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+              <h3 className="text-xl font-bold text-gray-800 mb-6">Crear Nueva Excepción / Feriado</h3>
+              <form onSubmit={handleCreateException} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Fecha</label>
+                  <input type="date" required value={newException.date} onChange={e => setNewException({...newException, date: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Profesor Afectado</label>
+                  <select required value={newException.teacherId} onChange={e => setNewException({...newException, teacherId: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg">
+                    <option value="">Seleccione...</option>
+                    <option value="all" className="font-bold text-blue-600">TODOS (Feriado Nacional)</option>
+                    {teachers.map(t => (
+                      <option key={t.id} value={t.teacherProfile?.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Motivo (Descripción)</label>
+                  <input type="text" required placeholder="Ej. Vacaciones, Feriado" value={newException.description} onChange={e => setNewException({...newException, description: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg" />
+                </div>
+                <button type="submit" className="bg-blue-600 text-white font-bold p-3 rounded-lg hover:bg-blue-700">Crear Excepción</button>
+              </form>
+            </div>
+
+            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 mt-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-6">Próximos Feriados y Excepciones</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="p-4 text-sm font-bold text-gray-600">Fecha</th>
+                      <th className="p-4 text-sm font-bold text-gray-600">Profesor</th>
+                      <th className="p-4 text-sm font-bold text-gray-600">Motivo</th>
+                      <th className="p-4 text-sm font-bold text-gray-600">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {exceptions.length === 0 && (
+                      <tr><td colSpan={4} className="p-4 text-center text-gray-500">No hay excepciones registradas</td></tr>
+                    )}
+                    {exceptions.map(exc => (
+                      <tr key={exc.id} className="border-t border-gray-100">
+                        <td className="p-4">{new Date(exc.date).toLocaleDateString(undefined, { timeZone: 'UTC' })}</td>
+                        <td className="p-4 font-bold">{exc.teacherId === null ? <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded">Todos (Global)</span> : exc.teacher?.user?.name}</td>
+                        <td className="p-4">{exc.description}</td>
+                        <td className="p-4">
+                          <button onClick={() => handleDeleteException(exc.id)} className="text-red-500 hover:text-red-700 font-bold text-sm">Eliminar</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

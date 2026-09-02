@@ -76,6 +76,16 @@ model TeacherProfile {
 
   availability TeacherAvailability[]
   classes      ClassSession[]
+  exceptions   TeacherException[]
+}
+
+model TeacherException {
+  id          String          @id @default(uuid())
+  teacherId   String?         
+  teacher     TeacherProfile? @relation(fields: [teacherId], references: [id])
+  date        DateTime        
+  description String?         
+  createdAt   DateTime        @default(now())
 }
 
 model TeacherAvailability {

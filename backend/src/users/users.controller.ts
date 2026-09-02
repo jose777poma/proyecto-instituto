@@ -191,6 +191,65 @@ export class UsersController {
     });
   }
 
+  @Get('exceptions')
+  @Roles(Role.ADMIN, Role.SECRETARY)
+  async getExceptions() {
+    return this.prisma.teacherException.findMany({
+      include: {
+        teacher: { include: { user: true } }
+      },
+      orderBy: { date: 'asc' }
+    });
+  }
+
+  @Post('exceptions')
+  @Roles(Role.ADMIN, Role.SECRETARY)
+  async createException(@Request() req: any, @Body() body: { date: string, teacherId: string | null, description: string }) {
+    const { date, teacherId, description } = body;
+    const targetDate = new Date(date);
+    targetDate.setUTCHours(0, 0, 0, 0);
+
+    const exception = await this.prisma.teacherException.create({
+      data: {
+        date: targetDate,
+        teacherId: teacherId || null,
+        description
+      }
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: req.user.userId,
+        actorRole: req.user.role,
+        action: 'CREATE_EXCEPTION',
+        entityType: 'TeacherException',
+        entityId: exception.id,
+        details: `Se creó una excepción/feriado para el ${targetDate.toISOString()} - ${description}`
+      }
+    });
+
+    return { message: 'Excepción creada', exception };
+  }
+
+  @Post('exceptions/:id/delete')
+  @Roles(Role.ADMIN, Role.SECRETARY)
+  async deleteException(@Request() req: any, @Param('id') id: string) {
+    await this.prisma.teacherException.delete({ where: { id } });
+    
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: req.user.userId,
+        actorRole: req.user.role,
+        action: 'DELETE_EXCEPTION',
+        entityType: 'TeacherException',
+        entityId: id,
+        details: `Se eliminó la excepción/feriado`
+      }
+    });
+    
+    return { message: 'Excepción eliminada' };
+  }
+
   @Post('student')
   @Roles(Role.SECRETARY, Role.ADMIN)
   async createStudent(@Request() req: any, @Body() data: any) {

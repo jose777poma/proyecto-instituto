@@ -100,6 +100,15 @@ export class BookingsService {
       throw new BadRequestException('Has alcanzado el límite máximo de 6 clases por semana.');
     }
 
+    // 1.8 Validar Feriados Globales
+    const targetDateNormalized = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 0, 0, 0));
+    const globalException = await this.prisma.teacherException.findFirst({
+      where: { date: targetDateNormalized, teacherId: null }
+    });
+    if (globalException) {
+      throw new BadRequestException(`No se pueden reservar clases en esta fecha: ${globalException.description || 'Feriado Nacional'}`);
+    }
+
     // ==========================================
     // INTENTO 1: Buscar clase existente (Match)
     // ==========================================
@@ -181,6 +190,13 @@ export class BookingsService {
     // Si tiene tokens ancla, necesitamos un profesor
     if (!teacherId) {
       throw new BadRequestException('Para abrir una nueva clase necesitas seleccionar un profesor de la lista de disponibles.');
+    }
+
+    const teacherException = await this.prisma.teacherException.findFirst({
+      where: { date: targetDateNormalized, teacherId }
+    });
+    if (teacherException) {
+      throw new BadRequestException(`El profesor seleccionado no está disponible en esta fecha: ${teacherException.description || 'Feriado/Excepción'}`);
     }
 
     // Verificar que el profesor elegido esté realmente disponible
@@ -382,6 +398,20 @@ export class BookingsService {
       throw new BadRequestException('Atención: El estudiante ya tiene una clase programada (o una falta injustificada) registrada para este mismo día. El límite es de 1 clase diaria.');
     }
 
+    const targetDateNormalized = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 0, 0, 0));
+    const exception = await this.prisma.teacherException.findFirst({
+      where: {
+        date: targetDateNormalized,
+        OR: [
+          { teacherId: null },
+          { teacherId: teacherId }
+        ]
+      }
+    });
+    if (exception) {
+      throw new BadRequestException(`No se puede forzar una clase. El profesor no está disponible en esta fecha: ${exception.description || 'Feriado/Excepción'}`);
+    }
+
     // Verificar que el profesor realmente trabaje en ese horario
     const schedule = await this.prisma.teacherAvailability.findFirst({
       where: { day_of_week: dayOfWeek, start_time: startTime, teacherId: teacherId },
@@ -451,6 +481,16 @@ export class BookingsService {
       return []; // No hay profesores disponibles porque la hora ya pasó
     }
 
+    // Comprobar feriados nacionales o excepciones globales
+    const targetDateNormalized = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+    
+    const globalException = await this.prisma.teacherException.findFirst({
+      where: { date: targetDateNormalized, teacherId: null }
+    });
+    if (globalException) {
+      return []; // Día feriado, nadie disponible
+    }
+
     const availableSchedules = await this.prisma.teacherAvailability.findMany({
       where: { day_of_week: dayOfWeek, start_time: startTime },
       include: { teacher: { include: { user: true } } }
@@ -462,10 +502,18 @@ export class BookingsService {
         continue;
       }
 
+      // Check teacher specific exception
+      const teacherException = await this.prisma.teacherException.findFirst({
+        where: { date: targetDateNormalized, teacherId: schedule.teacherId }
+      });
+      if (teacherException) {
+        continue; // Profesor en vacaciones/permiso
+      }
+
       const isBusy = await this.prisma.classSession.findFirst({
         where: {
           teacherId: schedule.teacherId,
-          date: targetDate,
+          date: targetDateNormalized,
           start_time: startTime,
             status: { notIn: ['COMPLETED', 'CANCELED'] }
         }
