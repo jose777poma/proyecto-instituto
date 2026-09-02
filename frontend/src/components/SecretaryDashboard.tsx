@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Users, Search, AlertCircle, ShieldAlert, BookOpen, X } from 'lucide-react';
+import { formatRelativeDate } from '../utils/dateFormatter';
 import api from '../api/axios';
 
 export default function SecretaryDashboard() {
@@ -366,7 +367,7 @@ export default function SecretaryDashboard() {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <p className="text-sm text-blue-600 font-bold uppercase tracking-wider mb-1">
-                        {new Date(cls.date).toLocaleDateString('es-ES', { timeZone: 'UTC', day: 'numeric', month: 'long' })}
+                        {formatRelativeDate(cls.date)}
                       </p>
                       <h3 className="text-3xl font-black text-gray-800">{cls.start_time}</h3>
                       <p className="text-gray-500 font-medium mt-1">{cls.teacher_name}</p>
@@ -631,7 +632,7 @@ export default function SecretaryDashboard() {
                       <div>
                         <div className="flex justify-between items-start mb-2">
                           <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                            {new Date(cls.date).toLocaleDateString('es-ES', { timeZone: 'UTC', day: 'numeric', month: 'short' })}
+                            {formatRelativeDate(cls.date)}
                           </span>
                           <span className="text-xs font-bold text-gray-500">Cupos: {cls.bookings_count}/5</span>
                         </div>
@@ -907,7 +908,7 @@ export default function SecretaryDashboard() {
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                            {new Date(record.date).toLocaleDateString('es-ES', { timeZone: 'UTC' })} a las {record.start_time}
+                            {formatRelativeDate(record.date)} a las {record.start_time}
                           </span>
                           <h4 className="font-bold text-gray-800 mt-2">Lección {record.anchor_lesson} ({record.session_type})</h4>
                           <p className="text-xs text-gray-500 mt-1">Profesor: {record.teacher_name}</p>
