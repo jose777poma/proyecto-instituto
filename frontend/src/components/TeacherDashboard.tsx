@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Users, CheckCircle, XCircle, Clock, BookOpen } from 'lucide-react';
+import { formatRelativeDate } from '../utils/dateFormatter';
 import api from '../api/axios';
 
 export default function TeacherDashboard() {
@@ -238,7 +239,7 @@ export default function TeacherDashboard() {
                       <div>
                         <div className="flex items-center gap-3 mb-1">
                           <h3 className="text-xl font-black text-gray-800 uppercase">
-                            {new Date(cls.date).toLocaleDateString('es-ES', { timeZone: 'UTC', day: 'numeric', month: 'short' })} - {cls.start_time}
+                            {formatRelativeDate(cls.date)} - {cls.start_time}
                           </h3>
                           {renderSessionTypeBadge(cls.session_type)}
                           <span className="bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1 rounded-full">
@@ -375,7 +376,7 @@ export default function TeacherDashboard() {
                  <tbody className="divide-y divide-gray-100">
                    {pastClasses.map(cls => (
                      <tr key={cls.id} className="hover:bg-gray-50">
-                       <td className="px-6 py-4 text-sm">{new Date(cls.date).toLocaleDateString('es-ES', { timeZone: 'UTC' })}</td>
+                       <td className="px-6 py-4 text-sm">{formatRelativeDate(cls.date)}</td>
                        <td className="px-6 py-4 text-sm font-bold">{cls.start_time}</td>
                        <td className="px-6 py-4">
                          <span className="font-bold block mb-1">Lección {cls.anchor_lesson}</span>
@@ -416,7 +417,7 @@ export default function TeacherDashboard() {
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                            {new Date(record.date).toLocaleDateString('es-ES', { timeZone: 'UTC' })} a las {record.start_time}
+                            {formatRelativeDate(record.date)} a las {record.start_time}
                           </span>
                           <h4 className="font-bold text-gray-800 mt-2">Lección {record.anchor_lesson} ({record.session_type})</h4>
                           <p className="text-xs text-gray-500 mt-1">Profesor: {record.teacher_name}</p>

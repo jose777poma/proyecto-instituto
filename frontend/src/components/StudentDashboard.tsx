@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, CheckCircle, Clock, Users, ArrowRight, Target, Calendar } from 'lucide-react';
+import { formatRelativeDate } from '../utils/dateFormatter';
 import api from '../api/axios';
 
 export default function StudentDashboard() {
@@ -233,7 +234,7 @@ export default function StudentDashboard() {
                           <div>
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                                {new Date(booking.classSession.date).toLocaleDateString('es-ES', { timeZone: 'UTC', day: 'numeric', month: 'short' })}
+                                {formatRelativeDate(booking.classSession.date)}
                               </span>
                               <span className="text-sm font-medium text-gray-500">
                                 {booking.classSession.session_type} - Lección {booking.classSession.anchor_lesson}
@@ -443,7 +444,7 @@ export default function StudentDashboard() {
                       history.map((booking: any) => (
                         <tr key={booking.id} className="hover:bg-gray-50 transition">
                           <td className="px-6 py-4 text-sm text-gray-700">
-                            {booking.classSession?.date ? new Date(booking.classSession.date).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : new Date(booking.createdAt).toLocaleDateString()}
+                            {booking.classSession?.date ? formatRelativeDate(booking.classSession.date) : new Date(booking.createdAt).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4">
                             <span className="font-bold text-gray-800 block">Lección {booking.classSession?.anchor_lesson || '?'}</span>
