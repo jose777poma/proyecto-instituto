@@ -40,10 +40,23 @@ export default function TeacherDashboard() {
     }
   };
 
+  // Estado para excepciones/feriados
+  const [exceptions, setExceptions] = useState<any[]>([]);
+
   useEffect(() => {
     fetchAgenda();
     fetchProfile();
+    fetchExceptions();
   }, []);
+
+  const fetchExceptions = async () => {
+    try {
+      const res = await api.get('/users/me/exceptions');
+      setExceptions(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -219,6 +232,24 @@ export default function TeacherDashboard() {
 
         {activeTab === 'agenda' && (
           <>
+            {exceptions.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="text-orange-500">🏖️</span> Tus Próximos Feriados y Permisos
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {exceptions.map(exc => (
+                    <div key={exc.id} className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-orange-900">{new Date(exc.date).toLocaleDateString(undefined, { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                        <p className="text-sm text-orange-700">{exc.description || (exc.teacherId === null ? 'Feriado Nacional' : 'Excepción')}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="mb-8 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                 <Calendar className="text-blue-600" /> Tus Clases Programadas

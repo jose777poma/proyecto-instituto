@@ -455,6 +455,29 @@ export class UsersController {
     return user;
   }
 
+  @Get('me/exceptions')
+  @Roles(Role.TEACHER)
+  async getMyExceptions(@Request() req: any) {
+    const teacherProfile = await this.prisma.teacherProfile.findUnique({
+      where: { userId: req.user.userId }
+    });
+    if (!teacherProfile) throw new NotFoundException('Perfil no encontrado');
+
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+
+    return this.prisma.teacherException.findMany({
+      where: {
+        date: { gte: today },
+        OR: [
+          { teacherId: null },
+          { teacherId: teacherProfile.id }
+        ]
+      },
+      orderBy: { date: 'asc' }
+    });
+  }
+
   @Post('me/meet-link')
   @Roles(Role.TEACHER)
   async updateMeetLink(@Request() req: any, @Body('meet_link') meet_link: string) {
