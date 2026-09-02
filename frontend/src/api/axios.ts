@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3000', // URL del backend NestJS
+  baseURL: 'http://127.0.0.1:3000', // URL del backend NestJS
 });
 
 // Interceptor para inyectar el token en cada petición

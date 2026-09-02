@@ -223,7 +223,8 @@ export default function StudentDashboard() {
                     const now = new Date();
                     const diffMs = classDateTime.getTime() - now.getTime();
                     const diffMinutes = diffMs / (1000 * 60);
-                    const canJoin = diffMinutes <= 5;
+                    const canJoin = diffMinutes <= 5 && diffMinutes >= -60;
+                    const isPast = diffMinutes < -60;
                     const meetLink = booking.classSession.teacher?.meet_link;
 
                     return (
@@ -242,29 +243,37 @@ export default function StudentDashboard() {
                             <p className="text-gray-600 font-medium">Profesor: {booking.classSession.teacher?.user?.name || 'Asignado'}</p>
                           </div>
                           <div className="flex gap-2">
-                            {canJoin ? (
-                              <a 
-                                href={meetLink || '#'} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-sm transition text-center flex-1"
-                              >
-                                Unirse a Videollamada
-                              </a>
+                            {isPast ? (
+                              <span className="px-4 py-2 bg-yellow-50 text-yellow-700 font-bold rounded-lg text-sm flex-1 text-center border border-yellow-200">
+                                Esperando Calificación
+                              </span>
                             ) : (
-                              <button 
-                                disabled
-                                className="px-4 py-2 bg-gray-100 text-gray-400 font-bold rounded-lg text-sm flex-1 cursor-not-allowed"
-                              >
-                                Disponible 5 min antes
-                              </button>
+                              <>
+                                {canJoin ? (
+                                  <a 
+                                    href={meetLink || '#'} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-sm transition text-center flex-1"
+                                  >
+                                    Unirse a Videollamada
+                                  </a>
+                                ) : (
+                                  <button 
+                                    disabled
+                                    className="px-4 py-2 bg-gray-100 text-gray-400 font-bold rounded-lg text-sm flex-1 cursor-not-allowed"
+                                  >
+                                    Disponible 5 min antes
+                                  </button>
+                                )}
+                                <button 
+                                  onClick={() => cancelBooking(booking)}
+                                  className="px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition"
+                                >
+                                  Cancelar
+                                </button>
+                              </>
                             )}
-                            <button 
-                              onClick={() => cancelBooking(booking)}
-                              className="px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition"
-                            >
-                              Cancelar
-                            </button>
                           </div>
                         </div>
                       </div>
