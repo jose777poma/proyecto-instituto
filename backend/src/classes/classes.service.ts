@@ -63,10 +63,22 @@ export class ClassesService {
       orderBy: { date: 'asc' }
     });
 
-    // 3. Filtrar en memoria las que ya llegaron al límite máximo de 5 alumnos
-    // y dar formato de salida limpio al Frontend.
+    // 3. Filtrar en memoria las que ya llegaron al límite máximo de 5 alumnos,
+    // o que si son de hoy, ya hayan empezado.
     return availableClasses
       .filter(c => c._count.bookings < 5)
+      .filter(c => {
+        const classDate = new Date(c.date);
+        if (classDate.getUTCFullYear() === today.getUTCFullYear() && classDate.getUTCMonth() === today.getUTCMonth() && classDate.getUTCDate() === today.getUTCDate()) {
+          const [hours, minutes] = c.start_time.split(':').map(Number);
+          const classTime = new Date();
+          classTime.setHours(hours, minutes, 0, 0);
+          if (classTime.getTime() <= now.getTime()) {
+            return false;
+          }
+        }
+        return true;
+      })
       .map(c => ({
         id: c.id,
         date: c.date,
